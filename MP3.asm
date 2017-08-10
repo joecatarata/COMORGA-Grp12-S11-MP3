@@ -1,21 +1,18 @@
-
 extern _system, _printf, _scanf, _getchar, _puts
 
-Zero:
-
-    
-    jmp reset
-
-ZeroFactorial:
-
-
+zeropower:
+   
+    fld1 
+    fst qword[exponentAnswer]
+    emms
+    jmp Factorial
 
 section .data
 clrscr db "cls",0
 
 
 formatFloat db "%lf", 0
-formatOut db "Input is %lf  ",0
+formatOut db "Input is %lg  ",13,10,0
 term db "Term #%d: ", 13,10,0
 expCounter dd 0
 termNum dd 0
@@ -23,15 +20,22 @@ eulerMessage db "e^x = ", 0
 approx db "Approximations: ", 0
 inputMsg db "Input a number: ", 0
 testCtr db "Ctr is %d", 0
+partialString db "Partial Answer is %lg", 13,10,0
+runningString db "Total Answer so far is %lg", 13, 10, 0
 testString db "%lg",13,10, 0
 temp dd 0
 tempEx dd 0
 orig dd 0
 total dq 0.0
 inputFloat dq 0.0
-factorialDivisor dd 0.0
+facCtr dd 0
+floatFacCtr dq 0.0
 originalInput dq 0.0
 exponentAnswer dq 0.0
+factorialAnswer dq 1.0
+partialAnswer dq 0.0
+runningAnswer dq 0.0
+FacAnswer dd 0
 ; try manipulation equation: x^n
 ; solved new expression: x^n = 2^(n*log2(x))
 section .text
@@ -59,9 +63,8 @@ _main:
 
     ;make loop for Taylor Series
     mov ecx, 0x14
-    mov dword[expCounter], 0x20 ;Initialize Counter
-    mov dword[termNum], 0x1 ;Initialize Term Number
-    
+    mov dword[expCounter], 0x0 ;Initialize Counter
+    mov dword[termNum], 0x1
     fld qword[inputFloat]
     fst qword[originalInput]
     emms
@@ -71,11 +74,17 @@ Taylor:
     fst qword[inputFloat]
     emms
     
+    mov ebx, dword[expCounter]
+    
+    mov dword[facCtr], ebx
+    
     mov dword[orig], ecx
     mov esi, dword[expCounter]
     ;x^n
+    cmp dword[expCounter], 0x0
+    jz zeropower
     Exponent:
-      cmp esi, 0x0
+      cmp esi, 0x1
       jz reset
       
       fld qword[originalInput]
@@ -83,45 +92,79 @@ Taylor:
       fmul st0,st1
       fst qword[inputFloat]
       emms
-      
-      push dword[inputFloat+4]
-      push dword[inputFloat]
-      push testString
-      call _printf
-      add esp, 0xC
-
-
-      sub esi, 1
+     
+      sub esi, 0x1
       jmp Exponent
 
 
     reset: 
+        fld qword[inputFloat]
+        fst qword[exponentAnswer]
+        emms
         mov ecx, dword[expCounter]
         
     ;n!
     Factorial:
+
+        cmp dword[facCtr], 0x1
+        jle Divide
+        
+        fld qword[factorialAnswer]
+        fimul dword[facCtr]
+        fst qword[factorialAnswer]
+        emms
+        
+    
+        sub dword[facCtr], 0x1
+        jmp Factorial
         
         
+       
     Divide:
     ;div
     
+    fld qword[exponentAnswer]
+    fld qword[factorialAnswer]
+    fdivr st0, st1 ;reverse for it to be stored at st0
+    fst qword[partialAnswer]
+    emms 
     
-    
-    
-    
-    
-    
-    mov dword[temp], ecx
-    
-    push dword[termNum]
-    push term
+    fld qword[partialAnswer]
+    fld qword[runningAnswer]
+    fadd st0, st1
+    fst qword[runningAnswer]
+    emms
+    push dword[partialAnswer+4]
+    push dword[partialAnswer]
+    push partialString
     call _printf
-    add esp, 8
+    add esp, 0xC
     
-    mov ecx, dword[temp]
+     push dword[runningAnswer+4]
+    push dword[runningAnswer]
+    push runningString
+    call _printf
+    add esp, 0xC
+    
+    
+    
+
+    fld1 
+    fst qword[factorialAnswer]
+    emms
+    
+    fldz
+    fst qword[partialAnswer]
+    emms
+    
+    mov ecx, dword[orig]
     inc dword[termNum]
+    inc dword[expCounter]
     
-    ;loop Taylor
+    dec ecx
+    
+    cmp ecx, -1
+    jne Taylor
     
     xor eax, eax
     ret
