@@ -12,16 +12,17 @@ clrscr db "cls",0
 
 
 formatFloat db "%lf", 0
-formatOut db "Input is %lg  ",13,10,0
+formatOut db "The value of x is %lg  ",13,10,0
 term db "Term #%d: ", 13,10,0
 expCounter dd 0
 termNum dd 0
 eulerMessage db "e^x = ", 0
 approx db "Approximations: ", 0
-inputMsg db "Input a number: ", 0
+inputMsg db "Input x for the function e^x: ", 0
 testCtr db "Ctr is %d", 0
-partialString db "Partial Answer is %lg", 13,10,0
-runningString db "Total Answer so far is %lg", 13, 10, 0
+partialString db "Partial Answer #%d is %lg, ",0
+runningString db "The total Answer so far is %0.30lg", 13, 10, 0
+conclusion db "The exponential function e^x is approximately equal to %0.30lg.", 13,10,0
 testString db "%lg",13,10, 0
 temp dd 0
 tempEx dd 0
@@ -134,11 +135,14 @@ Taylor:
     fadd st0, st1
     fst qword[runningAnswer]
     emms
+    
+
     push dword[partialAnswer+4]
     push dword[partialAnswer]
+    push dword[termNum]
     push partialString
     call _printf
-    add esp, 0xC
+    add esp, 0x10
     
      push dword[runningAnswer+4]
     push dword[runningAnswer]
@@ -163,8 +167,14 @@ Taylor:
     
     dec ecx
     
-    cmp ecx, -1
-    jne Taylor
+    jnz Taylor ;loop end
+    
+    
+    push dword[runningAnswer+4]
+    push dword[runningAnswer]
+    push conclusion
+    call _printf
+    add esp, 0xC
     
     xor eax, eax
     ret
